@@ -4,10 +4,15 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 func findSessionsFromPath(path string) ([]Session, error) {
+	path, err := expandPathHomeDir(path)
+	if err != nil {
+		return nil, err
+	}
 	realPaths, err := expandPathWildcards(path)
 	if err != nil {
 		return nil, err
@@ -21,6 +26,17 @@ func findSessionsFromPath(path string) ([]Session, error) {
 		sessions = append(sessions, session...)
 	}
 	return sessions, nil
+}
+
+func expandPathHomeDir(path string) (string, error) {
+	if strings.HasPrefix(path, "~") {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(homeDir, path[1:]), nil
+	}
+	return path, nil
 }
 
 func expandPathWildcards(path string) ([]string, error) {
