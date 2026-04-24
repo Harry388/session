@@ -42,6 +42,11 @@ func Test_FindSessions(t *testing.T) {
 					IsActive: true,
 				},
 				{
+					Name:     "extra-project",
+					Path:     root + "/test/extra-project",
+					IsActive: false,
+				},
+				{
 					Name:     "deep-project-one",
 					Path:     root + "/test/one-depth-basic/skip/deep-project-one",
 					IsActive: false,
@@ -49,11 +54,6 @@ func Test_FindSessions(t *testing.T) {
 				{
 					Name:     "deep-project-two",
 					Path:     root + "/test/one-depth-basic/skip/deep-project-two",
-					IsActive: false,
-				},
-				{
-					Name:     "extra-project",
-					Path:     root + "/test/extra-project",
 					IsActive: false,
 				},
 				{
