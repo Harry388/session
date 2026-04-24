@@ -1,6 +1,7 @@
 package session
 
 import (
+	"harry/session/src/config"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,15 +20,20 @@ func Test_FindSessions(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
-		paths   []string
+		conf    config.Config
 		want    []Session
 		wantErr bool
 	}{
 		{
 			name: "basic",
-			paths: []string{
-				root + "/test/zero-depth-basic",
-				root + "/test/one-depth-basic/*",
+			conf: config.Config{
+				SearchPaths: []string{
+					root + "/test/zero-depth-basic",
+					root + "/test/one-depth-basic/*",
+				},
+				IncludePaths: []string{
+					root + "/test/extra-project",
+				},
 			},
 			want: []Session{
 				{
@@ -43,6 +49,11 @@ func Test_FindSessions(t *testing.T) {
 				{
 					Name:     "deep-project-two",
 					Path:     root + "/test/one-depth-basic/skip/deep-project-two",
+					IsActive: false,
+				},
+				{
+					Name:     "extra-project",
+					Path:     root + "/test/extra-project",
 					IsActive: false,
 				},
 				{
@@ -66,7 +77,7 @@ func Test_FindSessions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotErr := FindSessions(tt.paths)
+			got, gotErr := FindSessions(tt.conf)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("FindSessions() failed: %v", gotErr)

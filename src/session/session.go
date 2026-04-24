@@ -1,6 +1,8 @@
 package session
 
 import (
+	"harry/session/src/config"
+	"os"
 	"slices"
 	"strings"
 )
@@ -23,14 +25,29 @@ func (session Session) key() sessionKey {
 	}
 }
 
-func FindSessions(paths []string) ([]Session, error) {
+func FindSessions(conf config.Config) ([]Session, error) {
 	inactiveSessions := make([]Session, 0)
-	for _, path := range paths {
+	for _, path := range conf.SearchPaths {
 		sessions, err := findSessionsFromPath(path)
 		if err != nil {
 			return nil, err
 		}
 		inactiveSessions = append(inactiveSessions, sessions...)
+	}
+
+	for _, path := range conf.IncludePaths {
+		dir, err := os.Stat(path)
+		if err != nil {
+			return nil, err
+		}
+		if !dir.IsDir() {
+			return nil, os.ErrNotExist
+		}
+		inactiveSessions = append(inactiveSessions, Session{
+			Name:     dir.Name(),
+			Path:     path,
+			IsActive: false,
+		})
 	}
 
 	activeSessions, err := findSessionsFromTmux()
