@@ -1,7 +1,9 @@
 package session
 
 import (
+	"errors"
 	"harry/session/src/config"
+	"io/fs"
 	"os"
 	"slices"
 	"strings"
@@ -37,11 +39,14 @@ func FindSessions(conf config.Config) ([]Session, error) {
 
 	for _, path := range conf.IncludePaths {
 		dir, err := os.Stat(path)
+		if errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}
 		if !dir.IsDir() {
-			return nil, os.ErrNotExist
+			continue
 		}
 		inactiveSessions = append(inactiveSessions, Session{
 			Name:     dir.Name(),
