@@ -91,7 +91,7 @@ func Test_FindSessions(t *testing.T) {
 				t.Fatalf("FindSessions() returned %d sessions, want %d", len(got), len(tt.want))
 			}
 			for i, want := range tt.want {
-				if got[i].Name != want.Name || got[i].Path != want.Path || got[i].IsActive != want.IsActive {
+				if got[i] != want {
 					t.Errorf("FindSessions()[%d] = %v, want %v", i, got[i], want)
 				}
 			}
