@@ -2,8 +2,10 @@ package session
 
 import (
 	"errors"
+	"harry/session/src/config"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -40,9 +42,13 @@ func listTmuxSessionsF(format string) []string {
 	return lines
 }
 
-func AttachToSession(session Session) error {
+func AttachToSession(conf config.Config, session Session) error {
 	if !session.IsActive {
 		err := startNewTmuxSession(session)
+		if err != nil {
+			return err
+		}
+		err = sessionInit(conf, session)
 		if err != nil {
 			return err
 		}
@@ -77,8 +83,35 @@ func attachTmuxToSession(session Session) error {
 func startNewTmuxSession(session Session) error {
 	cmd := exec.Command("tmux", "new-session", "-c", session.Path, "-s", session.Name, "-d")
 	_, err := cmd.Output()
-	if err != nil {
+	return err
+}
+
+func sessionInit(conf config.Config, session Session) error {
+	localScript := filepath.Join(session.Path, ".session")
+	if found, err := tryInitScript(localScript, session); found {
 		return err
 	}
+
+	globalScript := filepath.Join(conf.Location, "scripts", session.Name)
+	if found, err := tryInitScript(globalScript, session); found {
+		return err
+	}
+
+	defaultScript := filepath.Join(conf.Location, "default-session")
+	if found, err := tryInitScript(defaultScript, session); found {
+		return err
+	}
+
 	return nil
+}
+
+func tryInitScript(script string, session Session) (bool, error) {
+	if file, err := os.Stat(script); err == nil && !file.IsDir() {
+		_, err := exec.Command("tmux", "send-keys", "-t", session.Name, script+" "+session.Name, "c-M").Output()
+		if err != nil {
+			return true, err
+		}
+		return true, nil
+	}
+	return false, nil
 }

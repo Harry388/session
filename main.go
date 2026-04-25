@@ -6,11 +6,13 @@ import (
 	"harry/session/src/config"
 	"harry/session/src/session"
 	"os"
+	"path/filepath"
 	"strconv"
 )
 
 func main() {
-	sessions, err := session.FindSessions(config.Config{
+	conf := config.Config{
+		Location: filepath.Join(os.Getenv("HOME"), ".config", "session"),
 		SearchPaths: []string{
 			"~/dev/*",
 			"~/work/*",
@@ -18,7 +20,9 @@ func main() {
 		IncludePaths: []string{
 			"~/env",
 		},
-	})
+	}
+
+	sessions, err := session.FindSessions(conf)
 	if err != nil {
 		fmt.Printf("Error when finding sessions: %v\n", err)
 		return
@@ -42,7 +46,7 @@ func main() {
 			return
 		}
 		selection := sessions[index]
-		err = session.AttachToSession(selection)
+		err = session.AttachToSession(conf, selection)
 		if err != nil {
 			fmt.Printf("Error when attaching to session: %v\n", err)
 			return
