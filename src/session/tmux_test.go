@@ -19,35 +19,23 @@ func Test_listTmuxSessionsF(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
-		format  string
-		want    []string
-		wantErr bool
+		format string
+		want   []string
 	}{
 		{
-			name:    "names",
-			format:  "#{session_name}",
-			want:    []string{"session"},
-			wantErr: false,
+			name:   "names",
+			format: "#{session_name}",
+			want:   []string{"session"},
 		},
 		{
-			name:    "paths",
-			format:  "#{session_path}",
-			want:    []string{root},
-			wantErr: false,
+			name:   "paths",
+			format: "#{session_path}",
+			want:   []string{root},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotErr := listTmuxSessionsF(tt.format)
-			if gotErr != nil {
-				if !tt.wantErr {
-					t.Errorf("listTmuxSessionsF() failed: %v", gotErr)
-				}
-				return
-			}
-			if tt.wantErr {
-				t.Fatal("listTmuxSessionsF() succeeded unexpectedly")
-			}
+			got := listTmuxSessionsF(tt.format)
 			if len(got) != len(tt.want) {
 				t.Fatalf("listTmuxSessionsF() returned %d sessions, want %d", len(got), len(tt.want))
 			}

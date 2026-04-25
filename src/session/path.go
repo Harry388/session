@@ -57,9 +57,9 @@ func expandPathWildcards(path string) ([]string, error) {
 			}
 			for _, child := range partChildren {
 				if isVisibleDirectory(child) {
-					newPath := currentPath + "/" + child.Name()
+					newPath := filepath.Join(currentPath, child.Name())
 					if i < len(pathParts)-1 {
-						newPath = newPath + "/" + strings.Join(pathParts[i+1:], "/")
+						newPath = filepath.Join(newPath, filepath.Join(pathParts[i+1:]...))
 					}
 					childPaths, err := expandPathWildcards(newPath)
 					if err != nil {
