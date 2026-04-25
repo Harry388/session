@@ -57,6 +57,16 @@ func Test_findSessionsFromPath(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "zero-depth-worktree",
+			path: root + "/test/zero-depth-worktree",
+			want: []Session{
+				{
+					Name: "project-one[main]",
+					Path: root + "/test/zero-depth-worktree/project-one/main",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

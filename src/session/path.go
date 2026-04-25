@@ -95,11 +95,27 @@ func sessionChildrenOfRealPath(realPath string) ([]Session, error) {
 
 	for _, child := range children {
 		if isVisibleDirectory(child) {
-			sessions = append(sessions, Session{
-				Name:     child.Name(),
-				Path:     realPath + "/" + child.Name(),
-				IsActive: false,
-			})
+			childPath := realPath + "/" + child.Name()
+			worktrees, err := findWorktreesFromRealPath(childPath)
+
+			if err != nil ||
+				len(worktrees) == 0 ||
+				(len(worktrees) == 1 &&
+					(worktrees[0] == childPath || len(worktrees[0]) < len(childPath))) {
+				sessions = append(sessions, Session{
+					Name:     child.Name(),
+					Path:     realPath + "/" + child.Name(),
+					IsActive: false,
+				})
+			} else {
+				for _, worktree := range worktrees {
+					sessions = append(sessions, Session{
+						Name:     child.Name() + "[" + filepath.Base(worktree) + "]",
+						Path:     worktree,
+						IsActive: false,
+					})
+				}
+			}
 		}
 	}
 
