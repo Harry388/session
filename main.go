@@ -11,15 +11,18 @@ import (
 )
 
 func main() {
-	conf := config.Config{
-		Location: filepath.Join(os.Getenv("HOME"), ".config", "session"),
-		SearchPaths: []string{
-			"~/dev/*",
-			"~/work/*",
-		},
-		IncludePaths: []string{
-			"~/env",
-		},
+	userConfigDir, err := os.UserConfigDir()
+	if err != nil {
+		fmt.Printf("Error when getting user config dir: %v\n", err)
+		return
+	}
+
+	configDir := filepath.Join(userConfigDir, "session")
+
+	conf, err := config.ParseFromConfigDir(configDir)
+	if err != nil {
+		fmt.Printf("Error when parsing config: %v\n", err)
+		return
 	}
 
 	sessions, err := session.FindSessions(conf)
