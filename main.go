@@ -1,19 +1,21 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"harry/session/src/config"
 	"harry/session/src/session"
+	"harry/session/src/ui"
 	"os"
 	"path/filepath"
-	"strconv"
+
+	tea "charm.land/bubbletea/v2"
 )
 
 func main() {
 	userConfigDir, err := os.UserConfigDir()
 	if err != nil {
 		fmt.Printf("Error when getting user config dir: %v\n", err)
+		os.Exit(1)
 		return
 	}
 
@@ -22,42 +24,21 @@ func main() {
 	conf, err := config.ParseFromConfigDir(configDir)
 	if err != nil {
 		fmt.Printf("Error when parsing config: %v\n", err)
+		os.Exit(1)
 		return
 	}
 
 	sessions, err := session.FindSessions(conf)
 	if err != nil {
 		fmt.Printf("Error when finding sessions: %v\n", err)
+		os.Exit(1)
 		return
 	}
 
-	for i, session := range sessions {
-		fmt.Printf("%d: %v\n", i, session)
-	}
-
-	scanner := bufio.NewScanner(os.Stdin)
-
-	if scanner.Scan() {
-		input := scanner.Text()
-		index, err := strconv.Atoi(input)
-		if err != nil {
-			fmt.Printf("Error when converting input to int: %v\n", err)
-			return
-		}
-		if index < 0 || index >= len(sessions) {
-			fmt.Printf("Index out of range: %d\n", index)
-			return
-		}
-		selection := sessions[index]
-		err = session.AttachToSession(conf, selection)
-		if err != nil {
-			fmt.Printf("Error when attaching to session: %v\n", err)
-			return
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Printf("Error when reading input: %v\n", err)
+	program := tea.NewProgram(ui.InitialModel(conf, sessions))
+	if _, err := program.Run(); err != nil {
+		fmt.Printf("Error when running program: %v\n", err)
+		os.Exit(1)
 		return
 	}
 }

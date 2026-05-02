@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# Create a bare repository with a worktree
 cd test/zero-depth-worktree
 mkdir project-one
 cd project-one

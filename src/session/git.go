@@ -2,7 +2,6 @@ package session
 
 import (
 	"os/exec"
-	"path/filepath"
 	"strings"
 )
 
@@ -29,8 +28,8 @@ func findWorktreesFromRealPath(path string) ([]Worktree, error) {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "worktree") {
 			currentTree.Path = line[len("worktree "):]
-		} else if strings.HasPrefix(line, "branch") {
-			currentTree.Branch = filepath.Base(line[len("branch "):])
+		} else if strings.HasPrefix(line, "branch refs/heads/") {
+			currentTree.Branch = line[len("branch refs/heads/"):]
 		} else if line == "bare" {
 			currentTree = Worktree{}
 		} else if currentTree != (Worktree{}) && line == "" {

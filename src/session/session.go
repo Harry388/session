@@ -5,8 +5,9 @@ import (
 	"harry/session/src/config"
 	"io/fs"
 	"os"
-	"slices"
-	"strings"
+	"sort"
+
+	"github.com/lithammer/fuzzysearch/fuzzy"
 )
 
 type Session struct {
@@ -70,20 +71,8 @@ func FindSessions(conf config.Config) ([]Session, error) {
 	}
 
 	sessions := mergeSessions(inactiveSessions, activeSessions)
-	sortSessions(sessions)
 
 	return sessions, nil
-}
-
-func sortSessions(sessions []Session) {
-	slices.SortFunc(sessions, func(a, b Session) int {
-		if a.IsActive && !b.IsActive {
-			return -1
-		} else if !a.IsActive && b.IsActive {
-			return 1
-		}
-		return strings.Compare(a.Path+a.Name, b.Path+b.Name)
-	})
 }
 
 func mergeSessions(sessionSlices ...[]Session) []Session {
@@ -100,4 +89,21 @@ func mergeSessions(sessionSlices ...[]Session) []Session {
 		mergedSessions = append(mergedSessions, session)
 	}
 	return mergedSessions
+}
+
+func FuzzySearch(search string, sessions []Session) []Session {
+	fuzzyStrings := make([]string, 0)
+	for _, session := range sessions {
+		fuzzyStrings = append(fuzzyStrings, session.Path+session.Name)
+	}
+
+	matches := fuzzy.RankFind(search, fuzzyStrings)
+	sort.Sort(matches)
+
+	fuzzySessions := make([]Session, 0)
+	for _, match := range matches {
+		fuzzySessions = append(fuzzySessions, sessions[match.OriginalIndex])
+	}
+
+	return fuzzySessions
 }
