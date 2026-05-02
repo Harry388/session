@@ -91,7 +91,7 @@ func mergeSessions(sessionSlices ...[]Session) []Session {
 	return mergedSessions
 }
 
-func FuzzySearch(search string, sessions []Session) []Session {
+func FuzzySearch(sessions []Session, search string) []Session {
 	fuzzyStrings := make([]string, 0)
 	for _, session := range sessions {
 		fuzzyStrings = append(fuzzyStrings, session.Path+session.Name)

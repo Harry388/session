@@ -11,6 +11,7 @@ import (
 type Model struct {
 	Sessions        []session.Session
 	ViewSessions    []session.Session
+	HideInactive    bool
 	Search          string
 	Cursor          int
 	SelectedSession *session.Session
@@ -21,7 +22,8 @@ type Model struct {
 func InitialModel(sessions []session.Session) Model {
 	return Model{
 		Sessions:        sessions,
-		ViewSessions:    session.FuzzySearch("", sessions),
+		ViewSessions:    session.FuzzySearch(sessions, ""),
+		HideInactive:    false,
 		Search:          "",
 		Cursor:          0,
 		SelectedSession: nil,
@@ -62,13 +64,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(m.Search) > 0 {
 				m.Search = m.Search[:len(m.Search)-1]
 			}
+		case "tab":
+			m.HideInactive = !m.HideInactive
 		default:
 			if msg.Key().Mod == 0 {
 				m.Search += msg.Key().Text
 			}
 		}
 
-		m.ViewSessions = session.FuzzySearch(m.Search, m.Sessions)
+		m.ViewSessions = filterSessions(m.Sessions, m.HideInactive)
+		m.ViewSessions = session.FuzzySearch(m.ViewSessions, m.Search)
+
 		if m.Cursor >= len(m.ViewSessions) {
 			m.Cursor = len(m.ViewSessions) - 1
 		} else if m.Cursor < 0 {
@@ -115,4 +121,17 @@ func (m Model) View() tea.View {
 	view := tea.NewView(s.String())
 	view.AltScreen = true
 	return view
+}
+
+func filterSessions(sessions []session.Session, hideInactive bool) []session.Session {
+	if !hideInactive {
+		return sessions
+	}
+	var filteredSessions []session.Session
+	for _, session := range sessions {
+		if session.IsActive {
+			filteredSessions = append(filteredSessions, session)
+		}
+	}
+	return filteredSessions
 }
