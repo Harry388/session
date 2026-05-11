@@ -9,7 +9,37 @@ import (
 	"strings"
 )
 
-func findSessionsFromPath(path string) ([]Session, error) {
+type PathSessionFinder struct {
+	SearchPaths  []string
+	IncludePaths []string
+}
+
+func (f PathSessionFinder) FindSessions() ([]Session, error) {
+	var sessions []Session
+	for _, search := range f.SearchPaths {
+		paths, err := searchPath(search)
+		if err != nil {
+			return nil, err
+		}
+		for _, path := range paths {
+			sessions = append(sessions, newSessionsFromRepositoryPath(path, false)...)
+		}
+	}
+	for _, path := range f.IncludePaths {
+		path, err := expandPathHomeDir(path)
+		if err != nil {
+			return nil, err
+		}
+		sessions = append(sessions, newSessionsFromRepositoryPath(path, false)...)
+	}
+	return sessions, nil
+}
+
+func (f PathSessionFinder) MergeSessions(currentSessions []Session, newSessions []Session) []Session {
+	return defaultMergeSessions(currentSessions, newSessions)
+}
+
+func searchPath(path string) ([]string, error) {
 	path, err := expandPathHomeDir(path)
 	if err != nil {
 		return nil, err
@@ -18,15 +48,15 @@ func findSessionsFromPath(path string) ([]Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	sessions := make([]Session, 0)
+	foundPaths := make([]string, 0)
 	for _, path := range realPaths {
-		session, err := sessionChildrenOfRealPath(path)
+		children, err := childrenOfPath(path)
 		if err != nil {
 			return nil, err
 		}
-		sessions = append(sessions, session...)
+		foundPaths = append(foundPaths, children...)
 	}
-	return sessions, nil
+	return foundPaths, nil
 }
 
 func expandPathHomeDir(path string) (string, error) {
@@ -83,50 +113,18 @@ func expandPathWildcards(path string) ([]string, error) {
 	return realPaths, nil
 }
 
-func sessionChildrenOfRealPath(realPath string) ([]Session, error) {
-	children, err := os.ReadDir(realPath)
+func childrenOfPath(path string) ([]string, error) {
+	foundPaths := make([]string, 0)
+	children, err := os.ReadDir(path)
 	if err != nil {
-		return nil, fmt.Errorf("error when getting sessions of %s: %w", realPath, err)
+		return nil, fmt.Errorf("error when getting children of %s: %w", path, err)
 	}
-
-	sessions := make([]Session, 0)
-
 	for _, child := range children {
 		if isVisibleDirectory(child) {
-			childPath := filepath.Join(realPath, child.Name())
-			worktrees, err := findWorktreesFromRealPath(childPath)
-
-			// There are no worktrees, or there is only one worktree in the same or a parent directory
-			if err != nil ||
-				len(worktrees) == 0 ||
-				(len(worktrees) == 1 &&
-					(worktrees[0].Path == childPath || len(worktrees[0].Path) < len(childPath))) {
-				branch := ""
-				if len(worktrees) == 1 {
-					branch = worktrees[0].Branch
-				}
-				sessions = append(sessions, Session{
-					Name:        child.Name(),
-					Path:        childPath,
-					ProjectPath: childPath,
-					Branch:      branch,
-					IsActive:    false,
-				})
-			} else {
-				for _, worktree := range worktrees {
-					sessions = append(sessions, Session{
-						Name:        child.Name() + "[" + filepath.Base(worktree.Path) + "]",
-						Path:        worktree.Path,
-						ProjectPath: childPath,
-						Branch:      worktree.Branch,
-						IsActive:    false,
-					})
-				}
-			}
+			foundPaths = append(foundPaths, filepath.Join(path, child.Name()))
 		}
 	}
-
-	return sessions, nil
+	return foundPaths, nil
 }
 
 func isVisibleDirectory(d fs.DirEntry) bool {

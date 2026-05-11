@@ -10,9 +10,45 @@ import (
 	"strings"
 )
 
+type TmuxSessionFinder struct{}
+
+func (f TmuxSessionFinder) FindSessions() ([]Session, error) {
+	tmuxSessions, err := findTmuxSessions()
+	if err != nil {
+		return nil, err
+	}
+	sessions := make([]Session, 0, len(tmuxSessions))
+	for _, tmuxSession := range tmuxSessions {
+		session := newSessionFromWorkingPath(tmuxSession.Path, true)
+		session.Name = tmuxSession.Name
+		sessions = append(sessions, session)
+	}
+	return sessions, nil
+}
+
+func (f TmuxSessionFinder) MergeSessions(currentSessions []Session, newSessions []Session) []Session {
+	sessionMap := make(map[string]Session, len(currentSessions))
+	for _, session := range currentSessions {
+		sessionMap[session.Name+":"+session.WorkingPath] = session
+	}
+	for _, session := range newSessions {
+		sessionMap[session.Name+":"+session.WorkingPath] = session
+	}
+	mergedSessions := make([]Session, 0, len(sessionMap))
+	for _, session := range sessionMap {
+		mergedSessions = append(mergedSessions, session)
+	}
+	return mergedSessions
+}
+
 var tmuxSessionDataMismatchError = errors.New("unable to read tmux sessions (length of session data doesn't match)")
 
-func findSessionsFromTmux() ([]Session, error) {
+type TmuxSession struct {
+	Name string
+	Path string
+}
+
+func findTmuxSessions() ([]TmuxSession, error) {
 	names, err := listTmuxSessionsF("#{session_name}")
 	if err != nil {
 		return nil, err
@@ -26,16 +62,12 @@ func findSessionsFromTmux() ([]Session, error) {
 		return nil, tmuxSessionDataMismatchError
 	}
 
-	sessions := make([]Session, 0, len(names))
+	sessions := make([]TmuxSession, 0, len(names))
 
 	for i, name := range names {
-		branch, _ := getBranchFromRealPath(paths[i]) // ignore error, branch is optional
-		sessions = append(sessions, Session{
-			Name:        name,
-			Path:        paths[i],
-			ProjectPath: paths[i],
-			Branch:      branch,
-			IsActive:    true,
+		sessions = append(sessions, TmuxSession{
+			Name: name,
+			Path: paths[i],
 		})
 	}
 
@@ -54,13 +86,13 @@ func listTmuxSessionsF(format string) ([]string, error) {
 	return lines, nil
 }
 
-func AttachToSession(conf config.Config, session Session) error {
+func AttachTmuxToSession(conf config.Config, session Session) error {
 	if !session.IsActive {
 		err := startNewTmuxSession(session)
 		if err != nil {
 			return err
 		}
-		err = sessionInit(conf, session)
+		err = tmuxSessionInit(conf, session)
 		if err != nil {
 			return err
 		}
@@ -76,24 +108,23 @@ func attachTmuxToSession(session Session) error {
 	inSession := os.Getenv("TMUX") != ""
 	if inSession {
 		cmd := exec.Command("tmux", "switch", "-t", session.Name)
-		_, err := cmd.Output()
+		err := cmd.Run()
 		if err != nil {
 			return err
 		}
-		return nil
 	} else {
 		cmd := exec.Command("tmux", "attach", "-t", session.Name)
 		cmd.Stdin = os.Stdin
-		_, err := cmd.Output()
+		err := cmd.Run()
 		if err != nil {
 			return err
 		}
-		return nil
 	}
+	return nil
 }
 
 func startNewTmuxSession(session Session) error {
-	cmd := exec.Command("tmux", "new-session", "-c", session.Path, "-s", session.Name, "-d")
+	cmd := exec.Command("tmux", "new-session", "-c", session.WorkingPath, "-s", session.Name, "-d")
 	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("error when starting new tmux session: %w", err)
@@ -101,36 +132,36 @@ func startNewTmuxSession(session Session) error {
 	return nil
 }
 
-func sessionInit(conf config.Config, session Session) error {
-	localScript := filepath.Join(session.Path, ".session")
-	if found, err := tryInitScript(localScript, session); found {
+func tmuxSessionInit(conf config.Config, session Session) error {
+	localScript := filepath.Join(session.WorkingPath, ".session")
+	if found, err := tryTmuxSessionInitScript(localScript, session); found {
 		return err
 	}
 
 	globalScript := filepath.Join(conf.Location, "scripts", session.Name)
-	if found, err := tryInitScript(globalScript, session); found {
+	if found, err := tryTmuxSessionInitScript(globalScript, session); found {
 		return err
 	}
 
-	projectLocalScript := filepath.Join(session.ProjectPath, ".session")
-	if found, err := tryInitScript(projectLocalScript, session); found {
+	repositoryLocalScript := filepath.Join(session.RepositoryPath, ".session")
+	if found, err := tryTmuxSessionInitScript(repositoryLocalScript, session); found {
 		return err
 	}
 
-	projectGlobalScript := filepath.Join(conf.Location, "scripts", filepath.Base(session.ProjectPath))
-	if found, err := tryInitScript(projectGlobalScript, session); found {
+	repositoryGlobalScript := filepath.Join(conf.Location, "scripts", filepath.Base(session.RepositoryPath))
+	if found, err := tryTmuxSessionInitScript(repositoryGlobalScript, session); found {
 		return err
 	}
 
 	defaultScript := filepath.Join(conf.Location, "default-session")
-	if found, err := tryInitScript(defaultScript, session); found {
+	if found, err := tryTmuxSessionInitScript(defaultScript, session); found {
 		return err
 	}
 
 	return nil
 }
 
-func tryInitScript(script string, session Session) (bool, error) {
+func tryTmuxSessionInitScript(script string, session Session) (bool, error) {
 	if file, err := os.Stat(script); err == nil && !file.IsDir() {
 		err := exec.Command("tmux", "send-keys", "-t", session.Name+":1", script+" "+session.Name, "c-M").Run()
 		if err != nil {

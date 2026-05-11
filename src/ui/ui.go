@@ -44,17 +44,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+k", "up":
 			m.Cursor--
 		case "ctrl+w":
-			blankIndex := strings.Index(m.Search, " ")
-			slashIndex := strings.Index(m.Search, "/")
+			separatorsWithIndex := map[string]int{" ": -1, "/": -1}
 			separator := " "
-			if slashIndex > blankIndex {
-				separator = "/"
+			for s := range separatorsWithIndex {
+				index := strings.LastIndex(m.Search[:max(len(m.Search)-1, 0)], s)
+				if index > separatorsWithIndex[separator] {
+					separator = s
+				}
+				separatorsWithIndex[s] = index
 			}
-			parts := strings.Split(m.Search, separator)
-			if len(parts) == 1 {
+			if separatorsWithIndex[separator] == -1 {
 				m.Search = ""
 			} else {
-				m.Search = strings.Join(parts[:len(parts)-1], separator)
+				m.Search = m.Search[:separatorsWithIndex[separator]+1]
 			}
 		case "enter":
 			m.SelectedSession = &m.ViewSessions[m.Cursor]
@@ -104,8 +106,8 @@ func (m Model) View() tea.View {
 		if len(session.Branch) > longestBranch {
 			longestBranch = len(session.Branch)
 		}
-		if len(session.Path) > longestPath {
-			longestPath = len(session.Path)
+		if len(session.WorkingPath) > longestPath {
+			longestPath = len(session.WorkingPath)
 		}
 	}
 
@@ -162,10 +164,10 @@ func (m Model) View() tea.View {
 			s.WriteString("  ")
 		}
 		nameBuffer := strings.Repeat(" ", longestName+bufferSpace-len(session.Name))
-		pathBuffer := strings.Repeat(" ", longestPath+bufferSpace-len(session.Path))
+		pathBuffer := strings.Repeat(" ", longestPath+bufferSpace-len(session.WorkingPath))
 		s.WriteString(session.Name)
 		s.WriteString(nameBuffer)
-		s.WriteString(session.Path)
+		s.WriteString(session.WorkingPath)
 		s.WriteString(pathBuffer)
 		s.WriteString(session.Branch)
 		s.WriteString("\n")

@@ -28,7 +28,13 @@ func main() {
 		return
 	}
 
-	sessions, err := session.FindSessions(conf)
+	sessions, err := session.FindSessions([]session.SessionFinder{
+		session.PathSessionFinder{
+			SearchPaths:  conf.SearchPaths,
+			IncludePaths: conf.IncludePaths,
+		},
+		session.TmuxSessionFinder{},
+	})
 	if err != nil {
 		fmt.Print(err)
 		os.Exit(1)
@@ -54,7 +60,7 @@ func main() {
 		return
 	}
 
-	err = session.AttachToSession(conf, *uiModel.SelectedSession)
+	err = session.AttachTmuxToSession(conf, *uiModel.SelectedSession)
 	if err != nil {
 		fmt.Print(err)
 		os.Exit(1)
