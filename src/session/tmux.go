@@ -14,7 +14,7 @@ type TmuxSessionFinder struct{}
 func (f TmuxSessionFinder) FindSessions() ([]Session, error) {
 	tmuxSessions, err := findTmuxSessions()
 	if err != nil {
-		return nil, err
+		return nil, nil // Ignore errors as empty list
 	}
 	sessions := make([]Session, 0, len(tmuxSessions))
 	for _, tmuxSession := range tmuxSessions {
@@ -161,4 +161,8 @@ func tryTmuxSessionInitScript(script string, session Session) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func CleanTmuxName(name string) string {
+	return strings.ReplaceAll(name, ".", "_")
 }

@@ -3,7 +3,6 @@ package session
 import (
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/lithammer/fuzzysearch/fuzzy"
 )
@@ -24,7 +23,7 @@ func (s Session) UniqueKey() SessionKey {
 
 func NewSessionFromWorkingPath(path string, isActive bool) Session {
 	session := Session{
-		Name:           strings.ReplaceAll(filepath.Base(path), ".", "_"),
+		Name:           CleanTmuxName(filepath.Base(path)),
 		WorkingPath:    path,
 		RepositoryPath: path,
 		Branch:         "",

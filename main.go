@@ -114,7 +114,7 @@ func interpretSessionFromArg(sessions []session.Session, arg string) (*session.S
 			return nil, err
 		}
 		s := session.NewSessionFromWorkingPath(wd, false)
-		s.Name = arg
+		s.Name = session.CleanTmuxName(arg)
 		return &s, nil
 	}
 }
