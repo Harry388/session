@@ -36,7 +36,7 @@ func main() {
 			IncludePaths: conf.IncludePaths,
 		},
 		session.TmuxSessionFinder{},
-	})
+	}, session.MergeSessionsPreferActive)
 	if err != nil {
 		fmt.Print(err)
 		os.Exit(1)

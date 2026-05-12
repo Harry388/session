@@ -16,6 +16,12 @@ type Session struct {
 	IsActive       bool
 }
 
+type SessionKey struct{ Name, WorkingPath string }
+
+func (s Session) UniqueKey() SessionKey {
+	return SessionKey{Name: s.Name, WorkingPath: s.WorkingPath}
+}
+
 func NewSessionFromWorkingPath(path string, isActive bool) Session {
 	session := Session{
 		Name:           strings.ReplaceAll(filepath.Base(path), ".", "_"),
@@ -50,21 +56,36 @@ func NewSessionFromWorkingPath(path string, isActive bool) Session {
 
 type SessionFinder interface {
 	FindSessions() ([]Session, error)
-	MergeSessions(currentSessions []Session, newSessions []Session) []Session
 }
 
-func defaultMergeSessions(currentSessions []Session, newSessions []Session) []Session {
-	return append(currentSessions, newSessions...)
+type MergeFunc func(currentSessions []Session, newSessions []Session) []Session
+
+func MergeSessionsPreferActive(currentSessions []Session, newSessions []Session) []Session {
+	sessionMap := make(map[SessionKey]Session, len(currentSessions))
+	for _, session := range currentSessions {
+		sessionMap[session.UniqueKey()] = session
+	}
+	for _, session := range newSessions {
+		_, ok := sessionMap[session.UniqueKey()]
+		if !ok || session.IsActive {
+			sessionMap[session.UniqueKey()] = session
+		}
+	}
+	mergedSessions := make([]Session, 0, len(sessionMap))
+	for _, session := range sessionMap {
+		mergedSessions = append(mergedSessions, session)
+	}
+	return mergedSessions
 }
 
-func FindSessions(sources []SessionFinder) ([]Session, error) {
+func FindSessions(sources []SessionFinder, mergeFunc MergeFunc) ([]Session, error) {
 	var sessions []Session
 	for _, source := range sources {
 		sourceSessions, err := source.FindSessions()
 		if err != nil {
 			return nil, err
 		}
-		sessions = source.MergeSessions(sessions, sourceSessions)
+		sessions = mergeFunc(sessions, sourceSessions)
 	}
 	return sessions, nil
 }
