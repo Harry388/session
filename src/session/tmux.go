@@ -77,7 +77,7 @@ func listTmuxSessionsF(format string) ([]string, error) {
 	cmd := exec.Command("tmux", "list-sessions", "-F", format)
 	out, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("error when getting tmux sessions: %w", err)
+		return nil, fmt.Errorf("error when getting tmux sessions: %w\n", err)
 	}
 	str := string(out)
 	trimmed := strings.TrimSpace(str)
@@ -109,14 +109,14 @@ func attachTmuxToSession(session Session) error {
 		cmd := exec.Command("tmux", "switch", "-t", session.Name)
 		err := cmd.Run()
 		if err != nil {
-			return fmt.Errorf("error when switching to session %s: %v", session.Name, err)
+			return fmt.Errorf("error when switching to session %s: %v\n", session.Name, err)
 		}
 	} else {
 		cmd := exec.Command("tmux", "attach", "-t", session.Name)
 		cmd.Stdin = os.Stdin
 		err := cmd.Run()
 		if err != nil {
-			return fmt.Errorf("error when attaching to session %s: %v", session.Name, err)
+			return fmt.Errorf("error when attaching to session %s: %v\n", session.Name, err)
 		}
 	}
 	return nil
@@ -126,7 +126,7 @@ func startNewTmuxSession(session Session) error {
 	cmd := exec.Command("tmux", "new-session", "-c", session.WorkingPath, "-s", session.Name, "-d")
 	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("error when starting new tmux session: %w", err)
+		return fmt.Errorf("error when starting new tmux session: %w\n", err)
 	}
 	return nil
 }
@@ -171,7 +171,7 @@ func tryTmuxSessionInitScript(script string, session Session) (bool, error) {
 	if file, err := os.Stat(script); err == nil && !file.IsDir() {
 		err := exec.Command("tmux", "send-keys", "-t", session.Name+":1", script+" "+session.Name, "c-M").Run()
 		if err != nil {
-			return true, fmt.Errorf("error when running init script (%s): %w", script, err)
+			return true, fmt.Errorf("error when running init script (%s): %w\n", script, err)
 		}
 		return true, nil
 	}

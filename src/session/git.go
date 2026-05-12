@@ -17,7 +17,7 @@ func findGitWorktreesFromPath(path string) ([]GitWorktree, error) {
 	cmd.Dir = path
 	outBytes, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("error when getting git worktree list for %s: %w", path, err)
+		return nil, fmt.Errorf("error when getting git worktree list for %s: %w\n", path, err)
 	}
 	out := string(outBytes)
 
