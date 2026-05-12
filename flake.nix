@@ -32,13 +32,20 @@
                 shellHook = ''
                     export GOPATH=$HOME/go
                     export PATH=$GOPATH/bin:$PATH
-                    if [ ! -d ./test/zero-depth-worktree/project-one ]; then
+                    if [ ! -d ./test/zero-depth-worktree ]; then
+                        mkdir test/zero-depth-worktree
                         cd test/zero-depth-worktree
-                        mkdir project-one
-                        cd project-one
+                        mkdir project-one.git
+                        cd project-one.git
                         git init --bare -b main
-                        git worktree add main
+                        git worktree add ../project-one-main -b main
                         cd ../../../
+                    fi
+                    if [ ! -d ./test/extra-git-project ]; then
+                        mkdir test/extra-git-project
+                        cd test/extra-git-project
+                        git init -b main
+                        cd ../../
                     fi
                 '';
             };

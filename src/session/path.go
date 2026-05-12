@@ -22,7 +22,7 @@ func (f PathSessionFinder) FindSessions() ([]Session, error) {
 			return nil, err
 		}
 		for _, path := range paths {
-			sessions = append(sessions, newSessionsFromRepositoryPath(path, false)...)
+			sessions = append(sessions, NewSessionFromWorkingPath(path, false))
 		}
 	}
 	for _, path := range f.IncludePaths {
@@ -30,7 +30,7 @@ func (f PathSessionFinder) FindSessions() ([]Session, error) {
 		if err != nil {
 			return nil, err
 		}
-		sessions = append(sessions, newSessionsFromRepositoryPath(path, false)...)
+		sessions = append(sessions, NewSessionFromWorkingPath(path, false))
 	}
 	return sessions, nil
 }

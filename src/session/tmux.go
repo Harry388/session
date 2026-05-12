@@ -3,7 +3,6 @@ package session
 import (
 	"errors"
 	"fmt"
-	"harry/session/src/config"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -86,13 +85,13 @@ func listTmuxSessionsF(format string) ([]string, error) {
 	return lines, nil
 }
 
-func AttachTmuxToSession(conf config.Config, session Session) error {
+func AttachTmuxToSession(scriptsLocation string, session Session) error {
 	if !session.IsActive {
 		err := startNewTmuxSession(session)
 		if err != nil {
 			return err
 		}
-		err = tmuxSessionInit(conf, session)
+		err = tmuxSessionInit(scriptsLocation, session)
 		if err != nil {
 			return err
 		}
@@ -132,28 +131,35 @@ func startNewTmuxSession(session Session) error {
 	return nil
 }
 
-func tmuxSessionInit(conf config.Config, session Session) error {
+func tmuxSessionInit(scriptsLocation string, session Session) error {
 	localScript := filepath.Join(session.WorkingPath, ".session")
 	if found, err := tryTmuxSessionInitScript(localScript, session); found {
 		return err
 	}
 
-	globalScript := filepath.Join(conf.Location, "scripts", session.Name)
+	globalScript := filepath.Join(scriptsLocation, "scripts", session.Name)
 	if found, err := tryTmuxSessionInitScript(globalScript, session); found {
 		return err
 	}
 
-	repositoryLocalScript := filepath.Join(session.RepositoryPath, ".session")
-	if found, err := tryTmuxSessionInitScript(repositoryLocalScript, session); found {
+	sessionNameTrimmed := strings.TrimSuffix(session.Name, ".git")
+	globalTrimmedScript := filepath.Join(scriptsLocation, "scripts", sessionNameTrimmed)
+	if found, err := tryTmuxSessionInitScript(globalTrimmedScript, session); found {
 		return err
 	}
 
-	repositoryGlobalScript := filepath.Join(conf.Location, "scripts", filepath.Base(session.RepositoryPath))
+	repositoryGlobalScript := filepath.Join(scriptsLocation, "scripts", filepath.Base(session.RepositoryPath))
 	if found, err := tryTmuxSessionInitScript(repositoryGlobalScript, session); found {
 		return err
 	}
 
-	defaultScript := filepath.Join(conf.Location, "default-session")
+	repositoryNameTrimmed := strings.TrimSuffix(filepath.Base(session.RepositoryPath), ".git")
+	repositoryTrimmedGlobalScript := filepath.Join(scriptsLocation, "scripts", repositoryNameTrimmed)
+	if found, err := tryTmuxSessionInitScript(repositoryTrimmedGlobalScript, session); found {
+		return err
+	}
+
+	defaultScript := filepath.Join(scriptsLocation, "default-session")
 	if found, err := tryTmuxSessionInitScript(defaultScript, session); found {
 		return err
 	}

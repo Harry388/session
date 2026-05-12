@@ -3,6 +3,7 @@ package session
 import (
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/lithammer/fuzzysearch/fuzzy"
 )
@@ -15,51 +16,9 @@ type Session struct {
 	IsActive       bool
 }
 
-func newSessionsFromRepositoryPath(path string, isActive bool) []Session {
-	allWorktrees, err := findGitWorktreesFromPath(path)
-	worktrees := make([]GitWorktree, 0, len(allWorktrees))
-	for _, worktree := range allWorktrees {
-		if worktree.IsBare {
-			continue
-		}
-		worktrees = append(worktrees, worktree)
-	}
-
-	sessions := make([]Session, 0, len(worktrees))
-
-	// There are no worktrees, or there is only one worktree in the same or a parent directory
-	if err != nil ||
-		len(worktrees) == 0 ||
-		(len(worktrees) == 1 &&
-			(worktrees[0].Path == path || len(worktrees[0].Path) < len(path))) {
-		branch := ""
-		if len(worktrees) == 1 {
-			branch = worktrees[0].Branch
-		}
-		sessions = append(sessions, Session{
-			Name:           filepath.Base(path),
-			WorkingPath:    path,
-			RepositoryPath: path,
-			Branch:         branch,
-			IsActive:       isActive,
-		})
-	} else {
-		for _, worktree := range worktrees {
-			sessions = append(sessions, Session{
-				Name:           filepath.Base(path) + "[" + filepath.Base(worktree.Path) + "]",
-				WorkingPath:    worktree.Path,
-				RepositoryPath: path,
-				Branch:         worktree.Branch,
-				IsActive:       isActive,
-			})
-		}
-	}
-	return sessions
-}
-
 func NewSessionFromWorkingPath(path string, isActive bool) Session {
 	session := Session{
-		Name:           filepath.Base(path),
+		Name:           strings.ReplaceAll(filepath.Base(path), ".", "_"),
 		WorkingPath:    path,
 		RepositoryPath: path,
 		Branch:         "",

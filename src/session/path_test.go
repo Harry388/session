@@ -37,6 +37,38 @@ func TestPathSessionFinder_FindSessions(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "include worktree",
+			finder: PathSessionFinder{
+				IncludePaths: []string{cwd + "/test/zero-depth-worktree/project-one-main"},
+			},
+			want: []Session{
+				{
+					Name:           "project-one-main",
+					WorkingPath:    cwd + "/test/zero-depth-worktree/project-one-main",
+					RepositoryPath: cwd + "/test/zero-depth-worktree/project-one.git",
+					Branch:         "main",
+					IsActive:       false,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "include extra git project",
+			finder: PathSessionFinder{
+				IncludePaths: []string{cwd + "/test/extra-git-project"},
+			},
+			want: []Session{
+				{
+					Name:           "extra-git-project",
+					WorkingPath:    cwd + "/test/extra-git-project",
+					RepositoryPath: cwd + "/test/extra-git-project",
+					Branch:         "main",
+					IsActive:       false,
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "one depth basic",
 			finder: PathSessionFinder{
 				SearchPaths: []string{cwd + "/test/one-depth-basic/*"},
@@ -96,9 +128,16 @@ func TestPathSessionFinder_FindSessions(t *testing.T) {
 			},
 			want: []Session{
 				{
-					Name:           "project-one[main]",
-					WorkingPath:    cwd + "/test/zero-depth-worktree/project-one/main",
-					RepositoryPath: cwd + "/test/zero-depth-worktree/project-one",
+					Name:           "project-one-main",
+					WorkingPath:    cwd + "/test/zero-depth-worktree/project-one-main",
+					RepositoryPath: cwd + "/test/zero-depth-worktree/project-one.git",
+					Branch:         "main",
+					IsActive:       false,
+				},
+				{
+					Name:           "project-one_git",
+					WorkingPath:    cwd + "/test/zero-depth-worktree/project-one.git",
+					RepositoryPath: cwd + "/test/zero-depth-worktree/project-one.git",
 					Branch:         "",
 					IsActive:       false,
 				},
@@ -121,7 +160,7 @@ func TestPathSessionFinder_FindSessions(t *testing.T) {
 				t.Errorf("FindSessions() returned %v sessions, want %v", len(got), len(tt.want))
 			}
 			for i := range got {
-				if got[i].Name != tt.want[i].Name || got[i].WorkingPath != tt.want[i].WorkingPath || got[i].RepositoryPath != tt.want[i].RepositoryPath || got[i].IsActive != tt.want[i].IsActive {
+				if got[i] != tt.want[i] {
 					t.Errorf("FindSessions() = %v, want %v", got, tt.want)
 				}
 			}

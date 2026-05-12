@@ -62,7 +62,7 @@ func main() {
 		return
 	}
 
-	err = session.AttachTmuxToSession(conf, *selectedSession)
+	err = session.AttachTmuxToSession(conf.Location, *selectedSession)
 	if err != nil {
 		fmt.Print(err)
 		os.Exit(1)

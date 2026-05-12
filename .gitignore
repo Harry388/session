@@ -1,1 +1,2 @@
-test/zero-depth-worktree/project-one
+test/zero-depth-worktree
+test/extra-git-project
